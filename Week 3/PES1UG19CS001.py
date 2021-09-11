@@ -12,6 +12,12 @@ import random
 # output:int/float
 def get_entropy_of_dataset(df):
     # TODO
+    target = df[df.columns[-1]].value_counts()
+    # print(target)
+    entropy=0
+    for i in range(len(target)):
+        entropy += (-1 * target[i] * np.log2(target[i]/np.sum(target)))/np.sum(target)
+    # print(entropy)
     return entropy
 
 
@@ -20,6 +26,11 @@ def get_entropy_of_dataset(df):
 # output:int/float
 def get_avg_info_of_attribute(df, attribute):
     # TODO
+    avg_info=0
+    for i in df[attribute].unique():
+        temp_df = df[df[attribute]==i]
+        entropy = get_entropy_of_dataset(temp_df)
+        avg_info += (len(temp_df[attribute])*entropy)/len(df[attribute])
     return avg_info
 
 
@@ -28,6 +39,7 @@ def get_avg_info_of_attribute(df, attribute):
 # output:int/float
 def get_information_gain(df, attribute):
     # TODO
+    information_gain=get_entropy_of_dataset(df) - get_avg_info_of_attribute(df,attribute)
     return information_gain
 
 
@@ -43,4 +55,13 @@ def get_selected_attribute(df):
     example : ({'A':0.123,'B':0.768,'C':1.23} , 'C')
     '''
     # TODO
-    pass
+    dic = [{}]
+    for i in df.columns[:-1]:
+        dic[0][i]=get_information_gain(df,i)
+    val = max(dic[0].values())
+    for key, value in dic[0].items():
+        if val == value:
+            index = key
+            break
+    dic.append(index)
+    return tuple(dic)
