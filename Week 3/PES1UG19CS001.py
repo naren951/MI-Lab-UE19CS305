@@ -17,7 +17,7 @@ def get_entropy_of_dataset(df):
     entropy=0
     for i in range(len(target)):
         entropy += (-1 * target[i] * np.log2(target[i]/np.sum(target)))/np.sum(target)
-    # print(entropy)
+    #print(entropy)
     return entropy
 
 
@@ -31,6 +31,7 @@ def get_avg_info_of_attribute(df, attribute):
         temp_df = df[df[attribute]==i]
         entropy = get_entropy_of_dataset(temp_df)
         avg_info += (len(temp_df[attribute])*entropy)/len(df[attribute])
+    #print(avg_info)
     return avg_info
 
 
@@ -64,4 +65,9 @@ def get_selected_attribute(df):
             index = key
             break
     dic.append(index)
+    #print(dic)
     return tuple(dic)
+
+# df2 = pd.read_csv('sampletest2.csv')
+# print(get_selected_attribute(df2))
+# print(get_selected_attribute(df2[(df2['Breathing issues'] == 'Y')]))
