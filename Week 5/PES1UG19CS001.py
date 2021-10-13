@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.core.fromnumeric import transpose
 
 
 class Tensor:
@@ -122,7 +123,10 @@ class Tensor:
                 Gradient to a and b
         """
         # TODO
-        pass
+        if gradients is None:
+            return (np.ones(self.shape),np.ones(self.shape))
+        else:
+            return (gradients,gradients)
 
     def grad_matmul(self, gradients=None):
         """
@@ -137,7 +141,16 @@ class Tensor:
                 Gradients to a and b
         """
         # TODO
-        pass
+        a = self.history[1].arr
+        b = self.history[2].arr
+        if gradients==None:
+            l = np.matmul(np.ones(self.shape),np.transpose(b))
+            r = np.matmul(np.transpose(a),np.ones(self.shape))
+            return (l,r)
+        else:
+            l = np.matmul(gradients,np.transpose(b))
+            r = np.matmul(np.transpose(a),gradients)
+            return (l,r)
 
     def backward(self, gradients=None):
         """
@@ -158,4 +171,17 @@ class Tensor:
             Nothing. (The gradients of leaf have to set in their respective attribute(leafobj.grad))
         """
         # TODO
-        pass
+        name = self.history[0]
+        if name!='leaf':
+            if name=='add':
+                g_add = self.grad_add(gradients)
+                self.history[1].backward(g_add[0])
+                self.history[2].backward(g_add[1])
+            elif name=='matmul':
+                g_matmul = self.grad_matmul(gradients)
+                self.history[1].backward(g_matmul[0])
+                self.history[2].backward(g_matmul[1])
+        else:
+            if self.requires_grad == True:
+                self.grad+=gradients
+
