@@ -34,5 +34,5 @@ class SVM:
 
         # TODO
         clf = Pipeline(steps=[('standardscaler', StandardScaler()),
-                ('svc', SVC(kernel = 'rbf',gamma = 'auto', decision_function_shape = 'ovo'))])
+                ('svc', SVC(kernel = 'rbf'))])
         return clf.fit(self.X,self.y)
