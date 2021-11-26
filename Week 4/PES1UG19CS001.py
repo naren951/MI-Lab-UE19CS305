@@ -1,5 +1,6 @@
 import numpy as np
-from numpy.lib.function_base import disp
+from numpy.core.records import find_duplicate
+from numpy.lib.shape_base import _tile_dispatcher
 
 
 class KNN:
@@ -42,19 +43,17 @@ class KNN:
             Distance between each input to every data point in the train dataset
             (N x M) Matrix (N Number of inputs, M number of samples in the train dataset)(float)
         """
-        # TODO
-        data = self.data
-        p = self.p
-        dist = []
-        for i in range(len(x)):
-            temp_dist=[]
-            for j in range(len(data)):
-                d = 0
-                for k in range(len(data[j])):
-                    d+= abs(x[i][k]-data[j][k])**p
-                temp_dist.append(d**(1/p))
-            dist.append(temp_dist)
-        return dist
+        n, _ = self.data.shape
+        m, _ = x.shape
+        d = np.zeros((n, m))
+        for i in range(n):
+            n0 = self.data[i]
+            for j in range(m):
+                n1 = x[j]
+                diff = n0 - n1
+                s = np.sum(np.power(np.abs(diff), self.p))
+                d[i, j] = np.power(s, 1 / self.p)
+        return np.transpose(d)
 
     def k_neighbours(self, x):
         """
@@ -69,22 +68,17 @@ class KNN:
 
             Note that each row of both neigh_dists and idx_of_neigh must be SORTED in increasing order of distance
         """
-        # TODO
-        k_neigh = self.k_neigh
         dist = self.find_distance(x)
-        neigh = []
-        ind=[]
-        for i in dist:
-            neigh.append((sorted(i)[:k_neigh]))
-        for i in range(len(dist)):
-            temp_ind=[]
-            for k in neigh[i]:
-                for l in range(len(dist[i])):
-                    if k == dist[i][l]:
-                        temp_ind.append(l)
-                        break
-            ind.append(temp_ind)
-        return tuple([neigh,ind])
+        dists = []
+        idx = []
+        for i in range(dist.shape[0]):
+            d = dist[i]
+            en_d = list(enumerate(d))
+            en_d.sort(key = lambda x: x[1])
+            topk = en_d[0:self.k_neigh]
+            idx.append(list((j[0] for j in topk)))
+            dists.append(list((j[1] for j in topk)))
+        return (np.array(dists), np.array(idx))
 
     def predict(self, x):
         """
@@ -94,40 +88,19 @@ class KNN:
         Returns:
             pred: Vector of length N (Predicted target value for each input)(int)
         """
-        # TODO
-        k_neigh=self.k_neighbours(x)
-        targets = self.target
-        weight = self.weighted
-        lst=[]
-        wts={}
-        mk=0
-        for j in range (len(k_neigh[0])):
-            if(weight):
-                for i in range (len(k_neigh[0][0])):
-                    if(targets[k_neigh[1][j][i]] in wts):
-                        wts[targets[k_neigh[1][j][i]]]+=(1/(k_neigh[0][j][i]+0.00000001))
-                    else:
-                        wts[targets[k_neigh[1][j][i]]]=(1/(k_neigh[0][j][i]+0.00000001))
-                m=list(wts.values())[0]
-                mk=list(wts.keys())[0]
-                for key,val in wts.items():
-                    if(val>m):
-                        m=val
-                        mk=key
-            else:
-                for i in range (len(k_neigh[0][0])):
-                    if(targets[k_neigh[1][j][i]] in wts):
-                        wts[targets[k_neigh[1][j][i]]]+=1
-                    else:
-                        wts[targets[k_neigh[1][j][i]]]=1
-                m=list(wts.values())[0]
-                mk=list(wts.keys())[0]
-                for key,val in wts.items():
-                    if(val>m):
-                        m=val
-                        mk=key 
-            lst.append(mk)
-        return lst
+        dists, ids = self.k_neighbours(x)
+        pred = []
+        if not self.weighted:
+            dists = np.ones(dists.shape)
+        classes = np.unique(self.target)
+        for p in range(x.shape[0]):
+            res = {clas: 0 for clas in classes}
+            for i, d in zip(ids[p], dists[p]):
+                res[self.target[int(i)]] += 1 / (d + 0.0000000000001)
+            p = list(res.items())
+            p.sort(reverse = True, key = lambda x: x[1])
+            pred.append(p[0][0])
+        return pred
 
     def evaluate(self, x, y):
         """
@@ -139,12 +112,8 @@ class KNN:
         Returns:
             accuracy : (float.)
         """
-        # TODO
-        predict=self.predict(x)
-        correct,total=0,0
-        for i in range(len(y)):
-            total+=1
-            if(predict[i]==y[i]):
-                correct+=1
-        accuracy = (correct/total)*100
+        pred = self.predict(x)
+        res = pred == y
+        pos = np.sum(res)
+        accuracy = pos / len(res) * 100
         return accuracy
